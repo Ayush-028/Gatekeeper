@@ -8,38 +8,133 @@ PAGE = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Web Agent</title>
 <style>
-  :root { --bg:#fff; --fg:#1a1a1a; --muted:#6b7280; --card:#f3f4f6; --user:#2563eb; --border:#e5e7eb; }
+  :root {
+    --bg:#fafaf9; --fg:#1c1917; --muted:#78716c; --surface:#ffffff;
+    --border:#e7e5e4; --accent:#4f46e5; --on-accent:#ffffff;
+    --shadow:0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#16181d; --fg:#e8e8e8; --muted:#9ca3af; --card:#23262d; --user:#3b82f6; --border:#2f333b; }
+    :root {
+      --bg:#0f0f11; --fg:#ececec; --muted:#8b8b93; --surface:#1a1a1d;
+      --border:#2a2a2f; --accent:#8b8cf5; --on-accent:#0f0f11;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.3);
+    }
   }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--fg);
-         display:flex; flex-direction:column; height:100vh; }
-  header { padding:14px 20px; border-bottom:1px solid var(--border); font-weight:600; }
-  #chat { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px;
-          max-width:800px; width:100%; margin:0 auto; }
-  .msg { padding:10px 14px; border-radius:12px; max-width:85%; line-height:1.5; white-space:pre-wrap; word-wrap:break-word; }
-  .user { background:var(--user); color:#fff; align-self:flex-end; }
-  .bot { background:var(--card); align-self:flex-start; }
-  .bot a { color:var(--user); }
-  .steps { font-size:.8rem; color:var(--muted); margin-top:8px; }
-  form { display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--border);
-         max-width:800px; width:100%; margin:0 auto; }
-  input { flex:1; padding:10px 14px; border-radius:10px; border:1px solid var(--border);
-          background:var(--card); color:var(--fg); font-size:1rem; }
-  button { padding:10px 18px; border:0; border-radius:10px; background:var(--user); color:#fff; font-size:1rem; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:wait; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column;
+    height: 100vh; height: 100dvh;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header */
+  header {
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 24px 14px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    font-size: .95rem; font-weight: 600; letter-spacing: -.01em;
+  }
+  header .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  /* Chat area */
+  #chat {
+    flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
+    padding: 28px max(20px, calc((100% - 720px) / 2));
+    scroll-behavior: smooth;
+  }
+  #chat:empty::before {
+    content: "What would you like to look up?";
+    margin: auto; color: var(--muted); font-size: 1.1rem; letter-spacing: -.01em;
+  }
+
+  /* Messages */
+  .msg {
+    max-width: 85%; padding: 11px 16px; border-radius: 18px;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+    animation: rise .25s ease-out;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .user {
+    align-self: flex-end; background: var(--accent); color: var(--on-accent);
+    border-bottom-right-radius: 6px;
+  }
+  .bot {
+    align-self: flex-start; background: var(--surface); border: 1px solid var(--border);
+    border-bottom-left-radius: 6px; box-shadow: var(--shadow);
+  }
+  .bot a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  .bot b { font-weight: 600; }
+
+  /* Tool steps */
+  .steps {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .75rem; line-height: 1.7; color: var(--muted);
+  }
+
+  /* Input bar */
+  form {
+    padding: 12px max(20px, calc((100% - 720px) / 2)) calc(18px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+  }
+  .bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 6px 6px 18px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  input {
+    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+    color: var(--fg); font: inherit; padding: 8px 0;
+  }
+  input::placeholder { color: var(--muted); }
+  button {
+    display: grid; place-items: center; flex: none;
+    width: 38px; height: 38px; border: 0; border-radius: 50%; cursor: pointer;
+    background: var(--accent); color: var(--on-accent);
+    transition: transform .15s, opacity .15s;
+  }
+  button:hover { transform: scale(1.06); }
+  button:active { transform: scale(.96); }
+  button:disabled { opacity: .35; cursor: wait; transform: none; }
+
+  @media (max-width: 520px) {
+    header { padding-left: 20px; padding-right: 20px; }
+    .msg { max-width: 92%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .msg { animation: none; } #chat { scroll-behavior: auto; }
+  }
 </style>
 </head>
 <body>
-<header>Hola, this is Web Browsing Agent</header>
+<header>
+  <span class="dot"></span>
+  <span>Hola, this is Web Browsing Agent</span>
+</header>
 <div id="chat"></div>
 <form id="form">
-  <input id="q" placeholder="What should I look up?" autocomplete="off" autofocus>
-  <button id="send">Send</button>
+  <div class="bar">
+    <input id="q" placeholder="What should I look up?" autocomplete="off" autofocus>
+    <button id="send" aria-label="Send">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </div>
 </form>
 <script>
 const chat = document.getElementById("chat");
