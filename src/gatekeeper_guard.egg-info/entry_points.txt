@@ -1,0 +1,2 @@
+[console_scripts]
+gatekeeper = gatekeeper.cli:main

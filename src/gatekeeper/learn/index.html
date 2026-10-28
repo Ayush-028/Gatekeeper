@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gatekeeper Learn Mode</title>
+<style>
+  :root {
+    --ink: #14201a;
+    --muted: #55645b;
+    --paper: #ffffff;
+    --mist: #f2f5f3;
+    --line: #d9e0db;
+    --pass: #1e7a3c;
+    --pass-tint: #e4f3e8;
+    --unsure: #8a5a00;
+    --unsure-tint: #fbf0d6;
+    --block: #c2410c;
+    --block-tint: #fde8dc;
+    --hidden-tint: #ffe3cf;
+    --focus: #0b57d0;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font: 15px/1.55 var(--sans); color: var(--ink); background: var(--paper); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .app { display: grid; grid-template-columns: 280px 1fr; min-height: 100%; }
+  .rail { background: var(--mist); border-right: 1px solid var(--line); padding: 28px 20px; }
+  .brand { font: 700 26px/1.1 var(--serif); letter-spacing: -0.01em; margin: 0; }
+  .tag { color: var(--muted); margin: 6px 0 28px; font-size: 14px; }
+  .rail h2 { font: 600 13px/1 var(--sans); color: var(--muted); margin: 0 0 10px; }
+  .attacks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .attacks button {
+    width: 100%; text-align: left; padding: 10px 12px; border: 1px solid transparent; border-radius: 6px;
+    background: transparent; color: var(--ink); font: inherit; cursor: pointer;
+  }
+  .attacks button:hover { background: var(--paper); border-color: var(--line); }
+  .attacks button[aria-current="true"] { background: var(--paper); border-color: var(--ink); font-weight: 600; }
+  .status { margin-top: 28px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+
+  main { padding: 32px 40px 56px; max-width: 1100px; }
+  .head { display: flex; gap: 24px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  .head h2 { font: 700 30px/1.15 var(--serif); margin: 0 0 6px; }
+  .head p { margin: 0; color: var(--muted); max-width: 60ch; }
+  .scan {
+    background: var(--ink); color: #fff; border: 0; border-radius: 6px; padding: 12px 22px;
+    font: 600 15px var(--sans); cursor: pointer; white-space: nowrap;
+  }
+  .scan:hover { background: #24362c; }
+  .scan:disabled { opacity: .6; cursor: wait; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px; }
+  .panel { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--paper); }
+  .panel > h3 { margin: 0; padding: 10px 14px; font: 600 14px var(--sans); background: var(--mist); border-bottom: 1px solid var(--line); }
+  .panel .body { padding: 14px; }
+  iframe { width: 100%; height: 210px; border: 0; display: block; background: #fff; }
+  textarea {
+    width: 100%; height: 210px; border: 0; padding: 14px; resize: vertical; font: 13px/1.5 var(--mono);
+    color: var(--ink); background: #fbfcfb; display: block;
+  }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+
+  #results { margin-top: 36px; }
+  .results-title { font: 700 22px/1.2 var(--serif); margin: 0 0 14px; }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .cmp .before > h3 { background: var(--block-tint); }
+  .cmp .after > h3 { background: var(--pass-tint); }
+  .readout { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; margin: 0; }
+  .hidden-block { margin-top: 12px; background: var(--hidden-tint); border-left: 4px solid var(--block); padding: 8px 10px; border-radius: 0 6px 6px 0; }
+  .hidden-block b { display: block; font-size: 12px; color: var(--block); margin-bottom: 2px; }
+  .hidden-block span { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+  .muted { color: var(--muted); }
+
+  .verdict { display: inline-block; font-weight: 700; padding: 4px 10px; border-radius: 4px; font-size: 14px; }
+  .verdict.pass { background: var(--pass-tint); color: var(--pass); }
+  .verdict.check { background: var(--unsure-tint); color: var(--unsure); }
+  .verdict.block { background: var(--block-tint); color: var(--block); }
+  .meter { position: relative; margin: 18px 0 8px; height: 12px; display: flex; border-radius: 6px; overflow: visible; }
+  .meter i { display: block; height: 100%; }
+  .meter .z1 { background: var(--pass); border-radius: 6px 0 0 6px; }
+  .meter .z2 { background: #d9a33c; }
+  .meter .z3 { background: var(--block); border-radius: 0 6px 6px 0; }
+  .marker { position: absolute; top: -6px; width: 4px; height: 24px; background: var(--ink); border-radius: 2px; left: 0; transition: left .6s ease-out; }
+  .scale { display: flex; font-size: 12px; color: var(--muted); }
+  .scale span { text-align: center; }
+
+  .lesson { border: 1px solid var(--line); border-left: 4px solid var(--block); border-radius: 0 6px 6px 0; padding: 10px 12px; margin-top: 12px; }
+  .lesson h4 { margin: 0 0 4px; font: 700 15px var(--sans); }
+  .lesson p { margin: 2px 0; font-size: 14px; }
+  .lesson .found { font-family: var(--mono); font-size: 12.5px; background: var(--mist); padding: 2px 6px; border-radius: 3px; overflow-wrap: anywhere; }
+  .pts { float: right; font: 600 13px var(--mono); color: var(--muted); }
+  .err { color: var(--block); font-weight: 600; margin-top: 12px; }
+
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .rail { border-right: 0; border-bottom: 1px solid var(--line); }
+    .attacks { grid-template-columns: 1fr 1fr; }
+    main { padding: 24px 18px 48px; }
+    .pair, .cmp { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Attacks">
+    <h1 class="brand">Gatekeeper</h1>
+    <p class="tag">Learn how prompt injection hides, and how it gets caught.</p>
+    <h2>Pick an attack</h2>
+    <ul class="attacks" id="attacks"></ul>
+    <div class="status" id="status"></div>
+  </nav>
+
+  <main>
+    <div class="head">
+      <div>
+        <h2 id="title"></h2>
+        <p id="blurb"></p>
+      </div>
+      <button class="scan" id="scan">Scan this page</button>
+    </div>
+
+    <div class="pair">
+      <section class="panel">
+        <h3>What a person sees</h3>
+        <iframe id="preview" sandbox title="Rendered page preview"></iframe>
+      </section>
+      <section class="panel">
+        <h3>Page HTML</h3>
+        <textarea id="html" spellcheck="false" aria-label="Page HTML"></textarea>
+      </section>
+    </div>
+    <p class="hint">Edit the HTML and scan again to see what changes the verdict.</p>
+
+    <section id="results" aria-live="polite" hidden>
+      <h2 class="results-title">What happens when an agent reads this page</h2>
+      <div class="cmp">
+        <section class="panel before">
+          <h3>Without Gatekeeper</h3>
+          <div class="body" id="before"></div>
+        </section>
+        <section class="panel after">
+          <h3>With Gatekeeper</h3>
+          <div class="body" id="after"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const KIND = { comment: "HTML comment", css: "Text hidden with CSS", decoded: "Decoded from base64" };
+let presets = [], current = null, cfg = { pass_max: 2, block_min: 7 };
+
+function el(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") e.className = v; else e[k] = v;
+  }
+  kids.forEach(k => e.append(k));
+  return e;
+}
+
+function renderRail() {
+  const ul = $("attacks");
+  ul.replaceChildren();
+  const all = presets.concat([{ id: "own", title: "Your own page", blurb: "Paste any HTML below and scan it.", html: "<p>Paste your own page here.</p>" }]);
+  all.forEach(p => {
+    const b = el("button", { type: "button", textContent: p.title });
+    b.setAttribute("aria-current", current && current.id === p.id ? "true" : "false");
+    b.onclick = () => select(p);
+    ul.append(el("li", {}, b));
+  });
+}
+
+function select(p) {
+  current = p;
+  $("title").textContent = p.title;
+  $("blurb").textContent = p.blurb;
+  $("html").value = p.html;
+  updatePreview();
+  $("results").hidden = true;
+  renderRail();
+}
+
+function updatePreview() { $("preview").srcdoc = $("html").value; }
+let t; $("html").addEventListener("input", () => { clearTimeout(t); t = setTimeout(updatePreview, 250); });
+
+function hiddenBlocks(parts) {
+  return parts.map(p => el("div", { class: "hidden-block" },
+    el("b", { textContent: KIND[p.kind] || "Hidden" }), el("span", { textContent: p.text })));
+}
+
+function renderBefore(r) {
+  const box = $("before");
+  box.replaceChildren(
+    el("p", { class: "muted", textContent: "A basic agent that reads the page text takes in all of this:" }),
+    el("pre", { class: "readout", textContent: r.visible_text || "(no visible text)" }),
+    ...hiddenBlocks(r.hidden_parts)
+  );
+  if (!r.hidden_parts.length && r.signals.length) {
+    box.append(el("p", { class: "muted", textContent: "Nothing is technically hidden here. The risk is in the wording itself." }));
+  }
+}
+
+function meter(score) {
+  const max = Math.max(cfg.block_min + 6, score);
+  const w1 = (cfg.pass_max + 1) / max * 100, w2 = (cfg.block_min - cfg.pass_max - 1) / max * 100, w3 = 100 - w1 - w2;
+  const m = el("div", { class: "meter", role: "img" },
+    el("i", { class: "z1", style: `width:${w1}%` }), el("i", { class: "z2", style: `width:${w2}%` }),
+    el("i", { class: "z3", style: `width:${w3}%` }));
+  m.setAttribute("aria-label", `Risk score ${score}`);
+  const mk = el("span", { class: "marker" });
+  m.append(mk);
+  requestAnimationFrame(() => requestAnimationFrame(() => { mk.style.left = `calc(${Math.min(score, max) / max * 100}% - 2px)`; }));
+  const scale = el("div", { class: "scale" },
+    el("span", { style: `width:${w1}%`, textContent: "pass" }),
+    el("span", { style: `width:${w2}%`, textContent: "unsure" }),
+    el("span", { style: `width:${w3}%`, textContent: "block" }));
+  return [m, scale];
+}
+
+const LABEL = { pass: "Passed", check: "Unsure", block: "Blocked" };
+
+function renderAfter(r) {
+  const box = $("after");
+  box.replaceChildren(
+    el("span", { class: `verdict ${r.decision}`, textContent: `${LABEL[r.decision]} · risk score ${r.score}` }),
+    ...meter(r.score)
+  );
+  if (r.decision === "block") {
+    box.append(el("p", { textContent: "The agent never sees this page. It gets a short message saying the page was blocked." }));
+  } else {
+    box.append(el("p", { class: "muted", textContent: "The agent reads only what a person sees:" }),
+      el("pre", { class: "readout", textContent: r.clean_text || "(empty)" }));
+  }
+  if (r.ai_check) {
+    box.append(el("p", { textContent: `AI check (layer 3): ${r.ai_check.verdict}. ${r.ai_check.reason}` }));
+  } else if (r.note) {
+    box.append(el("p", { class: "muted", textContent: r.note }));
+  }
+  if (r.decision === "check" && !r.ai_check && r.layer3 !== "on") {
+    box.append(el("p", { class: "muted", textContent: "In the full product, the AI check (layer 3) decides here. It is " + r.layer3 + " on this computer." }));
+  }
+  r.lessons.forEach(c => box.append(el("div", { class: "lesson" },
+    el("span", { class: "pts", textContent: `+${c.points}` }),
+    el("h4", { textContent: c.title }),
+    el("p", { textContent: c.what }),
+    el("p", {}, el("span", { class: "found", textContent: c.evidence })),
+    el("p", { textContent: "Why it matters: " + c.why }),
+    el("p", { textContent: "How to spot it: " + c.spot }))));
+  if (!r.lessons.length) box.append(el("p", { class: "muted", textContent: "No warning signs found, so there is nothing to learn from this one except that normal pages pass." }));
+}
+
+$("scan").onclick = async () => {
+  const btn = $("scan"); btn.disabled = true; btn.textContent = "Scanning…";
+  try {
+    const res = await fetch("/api/scan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ html: $("html").value }) });
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error || "Scan failed");
+    cfg = { pass_max: r.pass_max, block_min: r.block_min };
+    renderBefore(r); renderAfter(r);
+    $("results").hidden = false;
+    $("results").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  } catch (e) {
+    $("results").hidden = false;
+    $("before").replaceChildren(); $("after").replaceChildren(el("p", { class: "err", textContent: e.message }));
+  }
+  btn.disabled = false; btn.textContent = "Scan this page";
+};
+
+(async () => {
+  const [p, s] = await Promise.all([fetch("/api/presets").then(r => r.json()), fetch("/api/status").then(r => r.json())]);
+  presets = p; cfg = s;
+  const text = { on: "AI check (layer 3): on. Unclear pages are sent to the hosted check.", off: "AI check (layer 3): off.", "not configured": "AI check (layer 3): not set up on this computer." };
+  $("status").textContent = text[s.layer3] || "";
+  select(presets[1] || presets[0]);
+})();
+</script>
+</body>
+</html>
