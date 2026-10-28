@@ -4,7 +4,6 @@ import json
 import time
 
 import requests
-from bs4 import BeautifulSoup
 from ddgs import DDGS
 from dotenv import load_dotenv
 from openai import OpenAI, RateLimitError, APIStatusError, APITimeoutError, APIConnectionError
@@ -36,16 +35,13 @@ def web_search(query: str) -> str:
 
 
 def read_page(url: str) -> str:
-    """Fetch a web page and return its cleaned text (truncated)."""
+    """Fetch a web page"""
     try:
         resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
     except Exception as e:
         return f"Error fetching page: {e}"
-    soup = BeautifulSoup(resp.text, "html.parser")
-    for tag in soup(["script", "style", "nav", "footer", "header"]):
-        tag.decompose()
-    return soup.get_text(" ", strip=True)[:6000]
+    return resp.text
 
 
 TOOLS = [
