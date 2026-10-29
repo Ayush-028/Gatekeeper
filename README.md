@@ -6,7 +6,7 @@ Gatekeeper sits in front of the tool your agent uses to read web pages, and bloc
 teaches how each attack works.
 
 ## Install
-    pip install git+https://github.com/<you>/gatekeeper.git
+    pip install git+https://github.com/Ayush-028/gatekeeper.git
 
 ## Protect your agent (one line)
 Find the function that reads web pages. Make it return the page's raw HTML and add `@protect`:
