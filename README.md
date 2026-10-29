@@ -50,3 +50,8 @@ It only protects tools you can wrap as Python functions (not a closed, built-in 
 ## Develop
     pip install -e . pytest && pytest
 Layer 3 server: see `docs/DEPLOY_LAYER3.md`.
+
+</br>
+
+>[!Note]
+>This project was made for a hackathon and is mostly **AI Slop*
