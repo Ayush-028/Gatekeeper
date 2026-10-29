@@ -54,4 +54,4 @@ Layer 3 server: see `docs/DEPLOY_LAYER3.md`.
 </br>
 
 >[!Note]
->This project was made for a hackathon and is mostly **AI Slop*
+>This project was made for a hackathon and is mostly **AI Slop**
